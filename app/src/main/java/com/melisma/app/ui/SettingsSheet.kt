@@ -108,7 +108,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.melisma.app.R
 import com.melisma.app.update.UpdateChecker
-import com.melisma.app.update.Updater
+import com.melisma.app.BuildConfig
 import com.melisma.app.settings.ArtworkSource
 import com.melisma.app.media.ServerSource
 import com.melisma.app.lyrics.provider.SpotifyWebToken
@@ -209,7 +209,6 @@ fun SettingsSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
     val store = container.settings
-    val updater = container.updater
     val context = LocalContext.current
     var showCredits by remember { mutableStateOf(false) }
 
@@ -1367,7 +1366,7 @@ fun SettingsSheet(
 
             Section(
                 title = "About",
-                subtitle = "Version, updates, credits",
+                subtitle = "Version, privacy, credits",
                 open = openSection == "about",
                 accent = accent,
                 onToggle = { openSection = if (openSection == "about") null else "about" },
@@ -1391,9 +1390,9 @@ fun SettingsSheet(
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            "Version ${updater.currentVersion} " +
-                                "(build ${updater.currentVersionCode})" +
-                                if (!updater.canUpdateInPlace) " · debug" else "",
+                            "Version ${BuildConfig.VERSION_NAME} " +
+                                "(build ${BuildConfig.VERSION_CODE})" +
+                                if (BuildConfig.DEBUG) " · debug" else "",
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 12.sp,
                         )
@@ -1408,108 +1407,10 @@ fun SettingsSheet(
                     modifier = Modifier.padding(bottom = 4.dp),
                 )
 
-                // ---- updates ------------------------------------------------
-                ToggleRow(
-                    title = "Check for updates automatically",
-                    subtitle = "On launch, at most every few hours",
-                    checked = settings.autoUpdateCheck,
-                    accent = accent,
-                    onCheckedChange = { store.setAutoUpdateCheck(it) },
+                Hint(
+                    "Privacy fork: automatic update checks and self-installation are disabled. " +
+                        "Updates are reviewed and installed manually, from a separately verified build.",
                 )
-                Help(
-                    "There is no app store here, so nothing else will ever mention that a fix " +
-                        "exists. This asks GitHub what the newest release is — one small " +
-                        "request, no account — and downloads nothing until you say so. " +
-                        "Installing goes through Android's own confirmation screen, and " +
-                        "Android refuses an APK that is not signed with the same key as the " +
-                        "copy you already have.",
-                )
-
-                val updateState by updater.state.collectAsStateWithLifecycle()
-                ActionRow(
-                    title = when (val state = updateState) {
-                        is Updater.State.Checking -> "Checking…"
-                        is Updater.State.Available -> "Update to ${state.release.versionName}"
-                        is Updater.State.Downloading -> when {
-                            state.fraction < 0f -> "Downloading…"
-                            else -> "Downloading — ${(state.fraction * 100).toInt()}%"
-                        }
-                        is Updater.State.ReadyToInstall -> "Ready to install"
-                        is Updater.State.UpToDate -> "You are up to date"
-                        is Updater.State.Failed -> "Check for updates"
-                        Updater.State.Idle -> "Check for updates"
-                    },
-                    subtitle = when (val state = updateState) {
-                        is Updater.State.Available ->
-                            "You have ${updater.currentVersion} · tap to download and install"
-                        is Updater.State.ReadyToInstall ->
-                            "Downloaded · tap to install"
-                        is Updater.State.Failed -> state.message
-                        is Updater.State.UpToDate -> "${updater.currentVersion} is the newest release"
-                        else -> "Asks GitHub for the newest release"
-                    },
-                    accent = accent,
-                    onClick = {
-                        scope.launch {
-                            when (val state = updateState) {
-                                is Updater.State.Available ->
-                                    updater.install(state.release)
-
-                                // Already downloaded: hand it over again rather than starting a
-                                // fresh check, which is the useful answer after Android's install
-                                // screen was cancelled.
-                                is Updater.State.ReadyToInstall ->
-                                    updater.install(state.release)
-
-                                is Updater.State.Downloading -> Unit
-                                else -> updater.check(automatic = false)
-                            }
-                        }
-                    },
-                )
-
-                if (!updater.canUpdateInPlace) {
-                    Hint(
-                        "This is a debug build, which installs under a different name — a " +
-                            "release cannot replace it, so updates are not offered.",
-                    )
-                }
-
-                // Only for people who already run Shizuku; to everyone else this would be a
-                // row about an app they do not have.
-                if (updater.shizukuPresent) {
-                    ToggleRow(
-                        title = "Install updates through Shizuku",
-                        subtitle = if (updater.shizukuGranted) {
-                            "Permission granted"
-                        } else {
-                            "Needs permission from Shizuku"
-                        },
-                        checked = settings.shizukuUpdates,
-                        accent = accent,
-                        onCheckedChange = { wanted ->
-                            store.setShizukuUpdates(wanted)
-                            if (wanted && !updater.shizukuGranted) updater.askShizuku()
-                        },
-                    )
-                    Help(
-                        "An update still needs a tap without this: Play Protect asks about " +
-                            "every APK it has not seen before. Shizuku holds an identity you " +
-                            "granted it yourself, and an install made with that identity is " +
-                            "not asked about — the same as installing from a computer. Shizuku " +
-                            "has to be running; if it is not, the update goes through Android's " +
-                            "installer as usual.",
-                    )
-                }
-
-                (updateState as? Updater.State.Available)?.let { available ->
-                    ActionRow(
-                        title = "Skip ${available.release.versionName}",
-                        subtitle = "Stops asking until a later release appears",
-                        accent = accent,
-                        onClick = { updater.skip(available.release) },
-                    )
-                }
 
                 // ---- links --------------------------------------------------
                 ActionRow(
