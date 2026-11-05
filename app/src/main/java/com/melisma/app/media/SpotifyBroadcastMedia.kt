@@ -199,7 +199,8 @@ class SpotifyBroadcastMedia(
             sourceLabel = "Spotify (device broadcast)",
             // Android media keys can control the system's current media-button recipient.
             // They are not a targeted Spotify API and cannot confirm delivery.
-            transport = Transport(playPause = true, skipNext = true, skipPrevious = true),
+            // Keep the phone display minimal: Play/Pause and Next only.
+            transport = Transport(playPause = true, skipNext = true),
         )
     }
 
