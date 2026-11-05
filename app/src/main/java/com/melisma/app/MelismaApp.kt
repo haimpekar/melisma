@@ -26,7 +26,6 @@ import com.melisma.app.media.SpotifyExtras
 import com.melisma.app.settings.PowerSaveWatcher
 import com.melisma.app.settings.Saving
 import com.melisma.app.settings.SettingsStore
-import com.melisma.app.update.Updater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -140,9 +139,6 @@ class AppContainer(context: Context) {
      * replacing. Matches the threshold [ArtworkSearch] uses to decide the same thing.
      */
     private val ARTWORK_GOOD_ENOUGH_PX = 500
-
-    /** Finds and installs new releases, since nothing else will. */
-    val updater = Updater(context, settings)
 
     private val spotifyExtras = SpotifyExtras(settings)
     private val appleArtwork = AppleArtwork(settings)
