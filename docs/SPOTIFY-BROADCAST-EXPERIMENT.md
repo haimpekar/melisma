@@ -22,10 +22,15 @@ The developer diagnostic *What players publish* shows event counts.
 ## Limitations and security
 
 - Spotify-only; other music players are not supported by this branch.
+- The phone uses a regular full-screen Lyrics view. PiP and automatic floating windows
+  are disabled, including for pre-existing saved settings. The playback bar offers only
+  Play/Pause and Next. When Melisma is hidden and no car screen is visible, monitoring
+  stops; Spotify itself keeps playing.
+- The existing Cinema view remains optional; it is not a floating window.
 - Spotify broadcasts are not guaranteed. If disabled, missing or stale,
   there is no legitimate source for an up-to-date playhead without opting into
   a different mechanism. Do not show invented playback data.
-- For **Play/Pause, Next, Previous**, the app sends standard Android media-key
+- For **Play/Pause and Next**, the app sends standard Android media-key
   presses via `AudioManager.dispatchMediaKeyEvent()`, which does not require
   notification access or Spotify API authorization. Android routes those keys to
   the **current media-button consumer**, not necessarily Spotify, and does not
