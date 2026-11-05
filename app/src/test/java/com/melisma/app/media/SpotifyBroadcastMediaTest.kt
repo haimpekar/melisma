@@ -30,9 +30,12 @@ class SpotifyBroadcastMediaTest {
         context = ApplicationProvider.getApplicationContext()
         visible = true
         dispatchedKeys.clear()
+        val store = SettingsStore(context)
+        // Robolectric shares application preferences across test methods.
+        store.setPlayerIgnored("com.spotify.music", false)
         subject = SpotifyBroadcastMedia(
             context,
-            SettingsStore(context),
+            store,
             listeningAllowed = { visible },
             sendMediaKey = { dispatchedKeys += it },
         )
@@ -44,6 +47,7 @@ class SpotifyBroadcastMediaTest {
         visible = false
         subject.stop()
         idle()
+        SettingsStore(context).setPlayerIgnored("com.spotify.music", false)
     }
 
     private fun idle() {
