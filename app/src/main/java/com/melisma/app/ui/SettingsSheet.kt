@@ -186,20 +186,6 @@ private val PROVIDER_INFO = mapOf(
     ),
 )
 
-/**
- * How long to keep watching with nothing playing.
- *
- * Ten minutes by default: long enough to survive the gap between two songs, a phone call or a look
- * at something else, and short enough that an app finished with in the morning is not still resident
- * at lunchtime.
- */
-private val BACKGROUND_TIMEOUTS = listOf(
-    2 to "2 min",
-    10 to "10 min",
-    30 to "30 min",
-    0 to "Never",
-)
-
 /** A short, practical list rather than every language ML Kit supports. */
 private val TRANSLATION_TARGETS = listOf(
     "en" to "English", "es" to "Spanish", "fr" to "French", "de" to "German",
@@ -1224,37 +1210,23 @@ fun SettingsSheet(
                 HorizontalDivider(color = Color.White.copy(alpha = 0.07f))
                 Spacer(Modifier.height(10.dp))
 
-                ChipGroup(
-                    label = "Stop watching after",
-                    options = BACKGROUND_TIMEOUTS,
-                    selected = settings.backgroundTimeoutMinutes,
-                    accent = accent,
-                    perRow = 4,
-                    onSelect = { store.setBackgroundTimeoutMinutes(it) },
+                Text(
+                    "Privacy: visible-only monitoring",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 Hint(
-                    when (val minutes = settings.backgroundTimeoutMinutes) {
-                        0 -> "Never stops. Watches for a track until you turn the permission off."
-                        else -> "After $minutes minutes with nothing playing and the app off " +
-                            "screen, it lets go and stops using power."
-                    },
+                    "This fork listens to active media sessions only while Melisma itself is " +
+                        "visible on your phone, in picture-in-picture, or in Android Auto. " +
+                        "Hiding the last Melisma screen disconnects its notification listener " +
+                        "immediately, even while Spotify continues playing.",
                 )
                 Help(
-                    "Reading what is playing needs notification access, and an enabled " +
-                        "notification listener is a bound service: Android keeps this app's " +
-                        "process resident and hands it every notification on the device — a " +
-                        "wake-up for each one, from every app, whether or not any music is " +
-                        "playing. That is why closing the app from the recent-apps screen did not " +
-                        "appear to close it, and why it could warm the phone hours " +
-                        "later.\n\nWhen the timer runs out the app gives that binding back. " +
-                        "Nothing then keeps the process alive, so the system reclaims it, and " +
-                        "there is nothing left running to wake up.\n\nThe cost, plainly: while " +
-                        "stopped it cannot notice a track starting, so lyrics will not be waiting " +
-                        "for you. Opening the app starts it watching again immediately. Music " +
-                        "already playing always keeps it awake, however long the " +
-                        "timer.\n\n\"Playing\" means a player you follow. One switched off under " +
-                        "Players to follow is not watched and does not hold this open — a video " +
-                        "left running for an hour cannot keep the app awake.",
+                    "Android's notification access permission is still broadly granted; " +
+                        "while Melisma is visible and connected, Android may deliver notifications " +
+                        "from unrelated apps. The listener ignores their content. When hidden, " +
+                        "the app releases the binding, rather than waiting for a background timer. " +
+                        "For stronger protection, revoke notification access in Android Settings.",
                 )
 
                 Spacer(Modifier.height(6.dp))
