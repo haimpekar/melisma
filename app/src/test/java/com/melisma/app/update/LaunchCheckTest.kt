@@ -12,15 +12,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Starting the app looks for a release.
- *
- * Reported as "the app doesn't detect a new update until I press the check button even if auto
- * update is on". It did check on launch — but behind a six-hour wall-clock interval that the manual
- * check also reset, so pressing the button once bought six hours of launches that did nothing. The
- * only way to find a release was to ask, which is the opposite of the point.
- *
- * A regression here is silent: the app simply stops noticing releases, and nobody finds out until
- * they go and look, which is how this was found in the first place.
+ * This privacy fork disables automatic update checks, including an old preference
+ * saved by a previous upstream installation. A hidden update check is not acceptable.
+ * The legacy Updater remains in source for compatibility but is never constructed by
+ * the production application.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -50,27 +45,18 @@ class LaunchCheckTest {
     )
 
     @Test
-    fun `a launch checks even when one just happened`() = runBlocking {
-        // As a manual check leaves things: the clock says "checked a moment ago".
+    fun `a new process never automatically checks for updates`() = runBlocking {
         settings.noteUpdateCheck(System.currentTimeMillis())
-
-        // A fresh Updater is a fresh process, which is what a launch is.
         updater().check(automatic = true)
-
-        assertEquals("a launch must look regardless of the clock", 1, looks)
+        assertEquals("the privacy fork never checks on launch", 0, looks)
     }
 
     @Test
-    fun `the interval still holds off repeats within one run`() = runBlocking {
+    fun `an old auto-update preference cannot reenable background checking`() = runBlocking {
+        settings.setAutoUpdateCheck(true)
         val updater = updater()
-
-        updater.check(automatic = true)
-        assertEquals(1, looks)
-
-        // The player screen being composed again is not a launch, and must not spend a request.
-        updater.check(automatic = true)
-        updater.check(automatic = true)
-        assertEquals("repeats inside one run stay throttled", 1, looks)
+        repeat(3) { updater.check(automatic = true) }
+        assertEquals("stored preference must not override the privacy policy", 0, looks)
     }
 
     @Test
