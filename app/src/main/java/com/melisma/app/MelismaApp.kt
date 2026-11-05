@@ -195,7 +195,7 @@ class AppContainer(context: Context) {
     private val _inPopup = MutableStateFlow(false)
 
     val isLyricsVisible: Boolean
-        get() = _uiVisible.value || _carConnected.value
+        get() = VisibilityListeningPolicy.mayListen(_uiVisible.value, _carConnected.value)
 
     var uiVisible: Boolean
         get() = _uiVisible.value
@@ -635,6 +635,9 @@ class MelismaApp : Application() {
 
     lateinit var container: AppContainer
         private set
+
+    /** Fail closed even if Android binds the listener during Application initialization. */
+    fun canListenNow(): Boolean = this::container.isInitialized && container.isLyricsVisible
 
     override fun onCreate() {
         super.onCreate()
