@@ -25,8 +25,14 @@ The developer diagnostic *What players publish* shows event counts.
 - Spotify broadcasts are not guaranteed. If disabled, missing or stale,
   there is no legitimate source for an up-to-date playhead without opting into
   a different mechanism. Do not show invented playback data.
-- The broadcasts do not grant playback transport controls: use Spotify itself
-  for play, pause, skip and seek.
+- For **Play/Pause, Next, Previous**, the app sends standard Android media-key
+  presses via `AudioManager.dispatchMediaKeyEvent()`, which does not require
+  notification access or Spotify API authorization. Android routes those keys to
+  the **current media-button consumer**, not necessarily Spotify, and does not
+  confirm that Spotify acted. Controls are enabled only while a valid Spotify
+  broadcast track is visible in Melisma.
+- **Seek to an exact playback position** is still unsupported: system media keys
+  provide no arbitrary seeking API. The scrubber stays disabled.
 - Android broadcast Intents are not authenticated; another app may spoof
   track metadata. Such data is treated as untrusted text, never as code.
 - A track that was already playing before Melisma becomes visible may not
