@@ -33,12 +33,14 @@ class MediaNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         bound = this
-        if ((application as? MelismaApp)?.container?.isLyricsVisible != true) standDown()
+        if ((application as? MelismaApp)?.canListenNow() != true) standDown()
     }
 
     override fun onListenerDisconnected() {
         bound = null
         super.onListenerDisconnected()
+        // If the UI reopened while an unbind was still in flight, reconnect on demand.
+        if ((application as? MelismaApp)?.canListenNow() == true) rebind(this)
     }
 
     override fun onDestroy() {
@@ -84,7 +86,7 @@ class MediaNotificationListener : NotificationListenerService() {
         /** Ask for the binding back. Safe to call when already bound. */
         fun rebind(context: Context) {
             if (isBound) return
-            if ((context.applicationContext as? MelismaApp)?.container?.isLyricsVisible != true) return
+            if ((context.applicationContext as? MelismaApp)?.canListenNow() != true) return
             runCatching {
                 requestRebind(ComponentName(context, MediaNotificationListener::class.java))
             }
