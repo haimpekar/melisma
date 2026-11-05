@@ -43,6 +43,18 @@ jobs:
       - name: Assemble debug and release
         run: ./gradlew :app:assembleDebug :app:assembleRelease :fakeplayer:assembleDebug
 
+      - name: Assert no sensitive service or installer manifest entries (Spotify experiment)
+        if: github.head_ref == 'experiment/spotify-broadcast-no-notification-access'
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          "$AAPT" dump xmltree "$APK" AndroidManifest.xml > /tmp/melisma-manifest-dump.txt
+          if grep -E 'BIND_NOTIFICATION_LISTENER_SERVICE|NotificationListenerService|REQUEST_INSTALL_PACKAGES|UPDATE_PACKAGES_WITHOUT_USER_ACTION|ShizukuProvider' /tmp/melisma-manifest-dump.txt; then
+            echo "Unexpected sensitive permission or component in no-notification test build" >&2
+            exit 1
+          fi
+          echo "Verified: zero notification-listener or self-installer entries in merged APK manifest"
+
       # Test-only APK, never a production signing key. Keep alongside a checksum.
       - name: Checksum test APK
         run: |
