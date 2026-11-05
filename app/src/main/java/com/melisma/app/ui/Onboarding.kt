@@ -33,14 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.melisma.app.R
 
-/**
- * What to read before using the app.
- *
- * There is exactly one thing it cannot work without (notification access) and several
- * things it works better with (tokens). Those are easy to confuse, and a lyrics app that
- * silently finds nothing is indistinguishable from a broken one — so this says plainly
- * which is which, once, on the first run.
- */
+/** Guide for the Spotify-only experiment: no notification permission is requested. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeSheet(
@@ -89,8 +82,8 @@ fun WelcomeSheet(
                 )
             }
             Text(
-                "Word-by-word lyrics for whatever your phone is playing — Spotify, YouTube " +
-                    "Music, a local player, anything.",
+                "Word-by-word synchronized lyrics for Spotify. This experimental version " +
+                    "does not request access to notifications from other apps.",
                 color = Color.White.copy(alpha = 0.62f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(top = 6.dp, bottom = 4.dp),
@@ -98,24 +91,21 @@ fun WelcomeSheet(
 
             Step(
                 number = "1",
-                title = "One permission, and it is required",
-                body = "Android publishes what is playing — track, artist and the live " +
-                    "playhead — as a “media session”, and that is what the lyrics sync to. " +
-                    "Reading it sits behind the notification-access switch. Without it the " +
-                    "app cannot see anything at all.\n\nNothing leaves your phone except a " +
-                    "track title and artist, and only to look lyrics up. Notifications " +
-                    "themselves are never read — but they are delivered, which keeps the app " +
-                    "running, so it hands the permission back after ten minutes with nothing " +
-                    "playing and picks it up again when you open it. Settings → Battery if you " +
-                    "want that sooner, later or never.",
+                title = "Turn on Spotify Device Broadcast Status",
+                body = "Open Spotify → Settings and privacy → Playback → " +
+                    "Device Broadcast Status, and turn it ON. Then play or change a song. " +
+                    "Spotify sends the song title, artist and playback position to Melisma. " +
+                    "No Spotify password, developer key or Android notification access is needed. " +
+                    "If the setting is missing or Spotify does not broadcast, lyrics cannot " +
+                    "synchronize in this experimental version.",
                 accent = accent,
                 done = permissionGranted,
             )
 
             Step(
                 number = "2",
-                title = "No tokens needed for most music",
-                body = "Four sources work immediately, with no account and no setup:\n\n" +
+                title = "No token needed for Spotify",
+                body = "Four lyrics sources can be queried without a Spotify token:\n\n" +
                     "•  AMLL TTML Database — community-timed word-by-word lyrics, made by " +
                     "hand and released to the public domain\n" +
                     "•  LRCLIB — open community database\n" +
@@ -129,45 +119,12 @@ fun WelcomeSheet(
                 accent = accent,
             )
 
-            Step(
-                number = "3",
-                title = "Tokens are optional, and each adds something",
-                body = "All of these live in Settings → Tokens and endpoints, and stay on " +
-                    "this device:\n\n" +
-                    "•  Spotify access token — brings back Spotify's own lyrics, the artist " +
-                    "image, the full-size cover and the tempo, for about an hour before it " +
-                    "expires. The cookie route Spotify closed; the token itself still works, " +
-                    "and you copy it from the web player's own network requests. It is under " +
-                    "Developer, because an hour is an errand rather than a setting.\n\n" +
-                    "•  Apple Music developer + user token — the best data there is: " +
-                    "syllable timings with official romanizations and translations. Needs a " +
-                    "subscription.\n\n" +
-                    "•  Musixmatch cookie — optional. It works without one, using a token it " +
-                    "mints for itself, but that is rate-limited per network. Paste the " +
-                    "musixmatchUserToken cookie from a signed-in musixmatch.com session and " +
-                    "that limit does not apply.\n\n" +
-                    "Skip all of them and the app still works. A source with no token stays " +
-                    "quiet rather than failing.",
-                accent = accent,
-            )
-
             Spacer(Modifier.height(8.dp))
 
-            if (!permissionGranted) {
-                PrimaryButton("Open notification access", accent, onGrantPermission)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Greyed out? Android 13 wants one more tap for an app installed from a browser: " +
-                        "Settings → Apps → Melisma → ⋮ → Allow restricted settings.",
-                    color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 12.sp,
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-            SecondaryButton("Add tokens in settings", accent, onOpenSettings)
+            SecondaryButton("Open settings", accent, onOpenSettings)
             Spacer(Modifier.height(10.dp))
             SecondaryButton(
-                if (permissionGranted) "Start listening" else "Later",
+                "Start listening",
                 accent,
                 onDismiss,
             )
