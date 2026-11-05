@@ -431,7 +431,7 @@ data class Settings(
      * user a fix exists. It is one small request to a public endpoint, and it downloads
      * nothing until they say so.
      */
-    val autoUpdateCheck: Boolean = true,
+    val autoUpdateCheck: Boolean = false,
     val lastUpdateCheckAt: Long = 0L,
 
     /**
@@ -806,7 +806,7 @@ class SettingsStore(context: Context) : ProviderCredentials {
         saverStillCanvas = prefs.getBoolean(KEY_SAVER_STILL_CANVAS, true),
         saverReleaseScreen = prefs.getBoolean(KEY_SAVER_RELEASE_SCREEN, false),
         saverSkipPrefetch = prefs.getBoolean(KEY_SAVER_SKIP_PREFETCH, true),
-        autoUpdateCheck = prefs.getBoolean(KEY_AUTO_UPDATE, true),
+        autoUpdateCheck = false, // Privacy fork: ignore persisted auto-update preferences
         lastUpdateCheckAt = prefs.getLong(KEY_UPDATE_CHECKED_AT, 0L),
         shizukuUpdates = prefs.getBoolean(KEY_SHIZUKU_UPDATES, false),
         skippedUpdateVersion = prefs.trimmed(KEY_UPDATE_SKIPPED),
