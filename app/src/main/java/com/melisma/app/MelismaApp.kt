@@ -60,10 +60,6 @@ import com.melisma.app.media.ExtrasStore
 import com.melisma.app.media.IsrcStore
 import com.melisma.app.media.ServerSource
 import com.melisma.app.media.MediaNotificationListener
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Hand-rolled container instead of a DI framework: there are eight objects, they are
@@ -72,9 +68,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 class AppContainer(context: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val appContext = context.applicationContext
 
     val settings = SettingsStore(context)
-    val media = MediaSessionRepository(context, settings)
+    val media = MediaSessionRepository(context, settings, listeningAllowed = { isLyricsVisible })
 
     private val powerSave = PowerSaveWatcher(context)
 
@@ -190,118 +187,49 @@ class AppContainer(context: Context) {
     suspend fun lyricsCacheSizeBytes(): Long = cache.sizeBytes()
 
     /**
-     * Whether any of the app's own windows are on screen. Set by the activity.
-     *
-     * Part of the idle test rather than the whole of it: the app should keep watching while it is
-     * open with nothing playing, and while something is playing with the app closed. It is only both
-     * at once — closed *and* silent — that there is nothing to watch for.
+     * A bound notification listener is justified only while Melisma can show lyrics.
+     * Phone, visible PiP, and Melisma's *own* Android Auto screen count independently.
      */
     private val _uiVisible = MutableStateFlow(false)
+    private val _carConnected = MutableStateFlow(false)
+    private val _inPopup = MutableStateFlow(false)
+
+    val isLyricsVisible: Boolean
+        get() = _uiVisible.value || _carConnected.value
 
     var uiVisible: Boolean
         get() = _uiVisible.value
         set(value) {
             _uiVisible.value = value
-            if (value) lastActivityAt = System.currentTimeMillis()
+            reconcileListening()
         }
 
-    /**
-     * Whether a car screen of ours is up. Set by the Android Auto session.
-     *
-     * Separate from [uiVisible] rather than folded into it, because the two are independent and
-     * either one is a reason to keep watching: a phone can be face-down in a cradle with the lyrics
-     * on the car screen, and one flag would have the activity's `onStop` switch the car off.
-     */
-    private val _carConnected = MutableStateFlow(false)
-
+    /** This flag represents a visible Melisma car session, not car connectivity. */
     var carConnected: Boolean
         get() = _carConnected.value
         set(value) {
             _carConnected.value = value
-            if (value) lastActivityAt = System.currentTimeMillis()
+            reconcileListening()
         }
-
-    /** Whether the window on screen is the floating one. Set by the activity. */
-    private val _inPopup = MutableStateFlow(false)
 
     var inPopup: Boolean
         get() = _inPopup.value
-        set(value) {
-            _inPopup.value = value
-        }
+        set(value) { _inPopup.value = value }
 
-    /** Somewhere of ours is on screen — a window, a floating window, or a car. */
-    private val attention: Flow<Boolean> =
-        combine(_uiVisible, _carConnected) { window, car -> window || car }
-
-    @Volatile
-    private var lastActivityAt = System.currentTimeMillis()
-
-    /**
-     * Release the notification listener once there has been nothing to watch for a while.
-     *
-     * The reason this is needed at all: an enabled notification listener is a bound service, so
-     * Android keeps the process resident and hands it every notification on the device — a wake-up
-     * per notification, from every app, indefinitely. An app the user finished with hours ago has no
-     * business doing that, and it is why this one never appeared to close.
-     *
-     * Checked on a slow tick rather than driven by events, because the condition is "nothing has
-     * happened for a while" and there is no event for that. A minute of granularity on a timeout
-     * measured in tens of minutes costs nothing.
-     */
-    private suspend fun watchForIdle() {
-        while (true) {
-            delay(IDLE_CHECK_INTERVAL_MS)
-
-            val timeout = settings.current.backgroundTimeoutMinutes
-            val playing = media.snapshot.value.playback.isPlaying
-            if (timeout <= 0 || playing || uiVisible || carConnected) {
-                lastActivityAt = System.currentTimeMillis()
-                continue
-            }
-            // Already stood down. Wait for the app to be opened rather than ticking once a minute
-            // forever to discover it, which is the sort of thing this whole mechanism exists to
-            // stop.
-            //
-            // The binding is re-checked on a slow timer as well, and that backstop is the point:
-            // `_uiVisible` is a conflated flow, so an app opened and closed again before this
-            // coroutine is scheduled leaves nothing to observe — but `isBound` still reflects what
-            // actually happened. Without it, one quick open-and-close left the listener bound for
-            // the rest of the process's life.
-            if (!MediaNotificationListener.isBound) {
-                while (!MediaNotificationListener.isBound) {
-                    val onScreen = withTimeoutOrNull(IDLE_CHECK_INTERVAL_MS) { attention.first { it } }
-                    // Rebinding takes a moment after the app comes back, and until it lands the
-                    // wait above returns at once; without a pause this spun.
-                    if (onScreen != null) delay(REBIND_POLL_MS)
-                }
-                continue
-            }
-
-            val idleFor = System.currentTimeMillis() - lastActivityAt
-            if (idleFor < timeout * 60_000L) continue
-
-            // Let go of everything that was keeping this process awake — and this is the only place
-            // that does, deliberately. Stopping the repository when the activity stopped froze the
-            // playback snapshot this loop reads: closing the app mid-song left it believing music
-            // was still playing and nothing ever stood down.
-            //
-            // What remains has no bound service and no window, which makes it an empty background
-            // process: no callbacks, no wake-ups, and first in line when the system wants memory.
-            //
-            // On the main thread, and both together: this loop runs on a background dispatcher,
-            // where letting go of the sessions means clearing a map that the framework's callbacks
-            // are writing to on the main one. Doing it here rather than leaning on the repository's
-            // own hop also keeps the order — detach the callbacks, then release the binding.
-            withContext(Dispatchers.Main) {
-                media.stop()
-                MediaNotificationListener.standDown()
-            }
+    /** Called on the main thread from phone/car visibility lifecycle changes. */
+    private fun reconcileListening() {
+        if (isLyricsVisible) {
+            MediaNotificationListener.rebind(appContext)
+            media.refresh()
+            media.start()
+        } else {
+            media.stop()
+            lyrics.clearForPrivacy()
+            MediaNotificationListener.standDown()
         }
     }
 
     init {
-        scope.launch { watchForIdle() }
 
         // The only place with both a Context and the settings. Installed unconditionally; whether it
         // ever runs is decided per call by `spotifyBrowserTokenEnabled`.
@@ -700,13 +628,7 @@ class AppContainer(context: Context) {
         _searchedArtwork.value = found
     }
 
-    private companion object {
-        /** A minute. The timeout it serves is measured in tens of them. */
-        const val IDLE_CHECK_INTERVAL_MS = 60_000L
-
-        /** How often to look for the listener's rebinding while something of ours is on screen. */
-        const val REBIND_POLL_MS = 500L
-    }
+    // A background-idle timer is deliberately not part of this privacy fork.
 }
 
 class MelismaApp : Application() {
