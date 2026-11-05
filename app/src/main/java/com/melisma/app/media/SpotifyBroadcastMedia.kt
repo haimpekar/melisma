@@ -4,9 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
+import android.view.KeyEvent
 import androidx.core.content.ContextCompat
 import com.melisma.app.settings.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +30,22 @@ class SpotifyBroadcastMedia(
     private val context: Context,
     private val settings: SettingsStore,
     private val listeningAllowed: () -> Boolean = { true },
+    /**
+     * Media keys are public Android input events, independent of the notification
+     * listener. Injectable so tests never issue actual system-wide media commands.
+     */
+    private val sendMediaKey: (Int) -> Unit = { keyCode ->
+        val manager = context.getSystemService(AudioManager::class.java)
+        if (manager != null) {
+            val downTime = SystemClock.uptimeMillis()
+            manager.dispatchMediaKeyEvent(
+                KeyEvent(downTime, downTime, KeyEvent.ACTION_DOWN, keyCode, 0),
+            )
+            manager.dispatchMediaKeyEvent(
+                KeyEvent(downTime, downTime + 1, KeyEvent.ACTION_UP, keyCode, 0),
+            )
+        }
+    },
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private val _snapshot = MutableStateFlow(PlayerSnapshot())
@@ -178,14 +197,32 @@ class SpotifyBroadcastMedia(
             playback = lastPosition.copy(durationMs = track.durationMs),
             sourcePackage = SPOTIFY_PACKAGE,
             sourceLabel = "Spotify (device broadcast)",
-            // Public broadcasts do not grant transport control. Use Spotify's controls.
-            transport = Transport(),
+            // Android media keys can control the system's current media-button recipient.
+            // They are not a targeted Spotify API and cannot confirm delivery.
+            transport = Transport(playPause = true, skipNext = true, skipPrevious = true),
         )
     }
 
-    fun togglePlayPause() = Unit
-    fun skipNext() = Unit
-    fun skipPrevious() = Unit
+    /**
+     * Send ordinary headset-style media buttons only after Spotify broadcast
+     * metadata is present and Melisma is visible. No privileged media-session
+     * token or notification permission is involved.
+     *
+     * Android chooses the current media-button recipient. If the user switches
+     * to another player, its session may receive the key instead of Spotify.
+     */
+    private fun dispatchControl(keyCode: Int) = onMain {
+        if (!registered || !listeningAllowed()) return@onMain
+        if (_snapshot.value.sourcePackage != SPOTIFY_PACKAGE || !_snapshot.value.hasTrack) return@onMain
+        runCatching { sendMediaKey(keyCode) }
+            .onFailure { Log.w(TAG, "Unable to dispatch media button $keyCode", it) }
+    }
+
+    fun togglePlayPause() = dispatchControl(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun skipNext() = dispatchControl(KeyEvent.KEYCODE_MEDIA_NEXT)
+    fun skipPrevious() = dispatchControl(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+
+    // Media buttons cannot seek to an exact millisecond: keep the scrubber disabled.
     fun seekTo(positionMs: Long) = Unit
 
     fun openSourceApp() {
@@ -203,11 +240,14 @@ class SpotifyBroadcastMedia(
         appendLine("Spotify events received: $totalEvents")
         appendLine("Last event: ${lastAction ?: "none"}")
         appendLine("Current song: ${lastTrack?.title ?: "none"}")
+        appendLine("Transport: system media buttons, not Spotify-targeted remote control")
+        appendLine("Controls: play/pause, previous, next; seek unavailable")
         appendLine("Spotify -> Settings and privacy -> Playback -> Device Broadcast Status: ON")
         appendLine("If there are no events, try pausing and resuming or switching tracks.")
     }
 
     private companion object {
+        const val TAG = "SpotifyBroadcastMedia"
         const val SPOTIFY_PACKAGE = "com.spotify.music"
         const val ACTION_METADATA = "com.spotify.music.metadatachanged"
         const val ACTION_PLAYBACK = "com.spotify.music.playbackstatechanged"
