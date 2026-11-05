@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import com.melisma.app.media.MediaNotificationListener
 
 class MainActivity : ComponentActivity() {
 
@@ -133,16 +132,7 @@ class MainActivity : ComponentActivity() {
         // Read afresh rather than trusted: a floating window swiped away never reports leaving
         // picture-in-picture, so a new activity would inherit "in the popup" from the last one.
         container.inPopup = isInPictureInPictureMode
-        // Ask for the notification listener back. It may have been stood down while nothing was
-        // playing — see MediaNotificationListener — and nothing rebinds it on its own. Rebinding is
-        // asynchronous, so the first read of the sessions can still fail; the retry backoff in
-        // MediaSessionRepository is what covers that, and was written for the same situation after
-        // the permission is first granted.
-        MediaNotificationListener.rebind(this)
-        // The permission may also have been granted while we were in the background, and the
-        // listener service is only bound after that happens.
-        container.media.refresh()
-        container.media.start()
+        // uiVisible initiates listening while this activity is actually visible.
     }
 
     /**
@@ -158,19 +148,12 @@ class MainActivity : ComponentActivity() {
         // A floating window is still on screen, so it still counts as visible — unless this stop is
         // the window being dismissed, which Android delivers *while still in* picture-in-picture
         // rather than by restoring a normal window first. Without the `isFinishing` half, dismissing
-        // the popup left the app marked visible for ever, which gates the idle timer permanently:
+        // the popup could leave the app marked visible after dismissal:
         // exactly the bug the timer exists to prevent.
         container.uiVisible = isInPictureInPictureMode && !isFinishing
         if (isFinishing) container.inPopup = false
 
-        // Deliberately *not* stopping the media repository here.
-        //
-        // The idle watch decides when to let go, and it needs a live playback signal to decide with.
-        // Detaching the callbacks froze the last snapshot, so closing the app mid-song left
-        // `isPlaying` true forever and nothing ever stood down — while closing it paused and then
-        // playing from elsewhere could stand down mid-song. Keeping one controller's callbacks for
-        // the length of the timeout costs almost nothing; being wrong about what is playing costs
-        // the whole feature.
+        // AppContainer disconnects immediately if neither phone nor car UI is visible.
     }
 
     override fun onDestroy() {
