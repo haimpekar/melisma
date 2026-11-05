@@ -65,10 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import com.melisma.app.AppContainer
 import com.melisma.app.BuildConfig
 import com.melisma.app.lyrics.LyricsState
@@ -92,7 +89,6 @@ import com.melisma.app.settings.TranslationSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.melisma.app.update.Updater
 
 @Composable
 fun PlayerScreen(
@@ -139,21 +135,6 @@ fun PlayerScreen(
     var selectionMode by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(emptySet<Int>()) }
 
-    // Ask about updates once the screen is up. Respects the setting, and says nothing at all when
-    // there is nothing to say.
-    //
-    // On every resume rather than once per composition: a media app is left running for days, so
-    // "on launch" alone means a process that never dies never looks again. The first look of a run
-    // always goes out and the rest are held off by the updater's interval, so coming back to the app
-    // after a while checks, and flicking away and back does not.
-    val updateState by container.updater.state.collectAsStateWithLifecycle()
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    LaunchedEffect(Unit) {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            container.updater.check(automatic = true)
-        }
-    }
-
     // Anything the user asked for that has something to report — which for now is the manual
     // re-lookup, a button that otherwise gave no sign of having worked.
     LaunchedEffect(Unit) {
@@ -173,29 +154,6 @@ fun PlayerScreen(
         }
     }
 
-    if (!popup && !showWelcome) {
-        UpdatePrompt(
-            state = updateState,
-            currentVersion = container.updater.currentVersion,
-            onInstall = {
-                // Both states, because pressing Install after cancelling Android's installer has to
-                // hand the same file over again rather than doing nothing — which, with the only
-                // button in the dialog, is what left it stuck.
-                val release = when (val state = updateState) {
-                    is Updater.State.Available -> state.release
-                    is Updater.State.ReadyToInstall -> state.release
-                    else -> null
-                }
-                release?.let { container.updater.install(it) }
-            },
-            onSkip = {
-                (updateState as? Updater.State.Available)?.let {
-                    container.updater.skip(it.release)
-                }
-            },
-            onDismiss = { container.updater.dismiss() },
-        )
-    }
     var jumpSignal by remember { mutableIntStateOf(0) }
 
     // Leaving selection mode should not leave a highlight behind.
