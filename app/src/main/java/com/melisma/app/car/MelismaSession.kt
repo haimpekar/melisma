@@ -12,7 +12,6 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import com.melisma.app.AppContainer
 import com.melisma.app.MelismaApp
-import com.melisma.app.media.MediaNotificationListener
 
 /**
  * One connection to a car, for as long as it lasts.
@@ -58,16 +57,10 @@ class MelismaSession : Session(), SavedStateRegistryOwner {
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
                 app.carConnected = true
-                // The listener may have been stood down hours ago; nothing rebinds it on its own.
-                MediaNotificationListener.rebind(carContext)
-                app.media.refresh()
-                app.media.start()
+                // carConnected initiates listening only while Melisma's car screen is visible.
             }
 
             override fun onStop(owner: LifecycleOwner) {
-                // Not stopping the media repository, for the same reason the activity does not:
-                // the idle watch needs a live playback signal to decide with, and a frozen snapshot
-                // reads as "still playing" for ever.
                 app.carConnected = false
             }
         })

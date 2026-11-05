@@ -267,6 +267,21 @@ class LyricsRepository(
     /** Counts track changes, so a slow read cannot install a track that has been superseded. */
     private var trackGeneration = 0
 
+    /** Cancel track fetches, identification, and prefetch immediately on loss of visibility. */
+    fun clearForPrivacy() {
+        trackGeneration++
+        fetchJob?.cancel()
+        identifyJob?.cancel()
+        prefetchJob?.cancel()
+        currentRequest = null
+        currentTrack = null
+        prefetchedKey = null
+        derived.clear()
+        romanizable.clear()
+        languages.clear()
+        base.value = Base.Idle
+    }
+
     private fun setTrack(track: TrackInfo?, forceIsrc: String?, freshen: Boolean = false) {
         val request = track?.takeIf { !it.isEmpty }?.toRequest(forceIsrc)
 
@@ -278,6 +293,7 @@ class LyricsRepository(
         }
 
         fetchJob?.cancel()
+        identifyJob?.cancel()
         currentRequest = request
         currentTrack = track
         derived.clear()

@@ -52,6 +52,7 @@ class MediaSessionRepository(
      * every republish on the device.
      */
     private val settings: SettingsStore,
+    private val listeningAllowed: () -> Boolean = { true },
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -109,6 +110,7 @@ class MediaSessionRepository(
         android.content.Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
 
     fun start() = onMain {
+        if (!listeningAllowed()) return@onMain
         val granted = isPermissionGranted()
         _permissionGranted.value = granted
         if (!granted || started || sessionManager == null) return@onMain
@@ -141,16 +143,23 @@ class MediaSessionRepository(
     }
 
     fun stop() = onMain {
-        if (!started) return@onMain
-        started = false
-        runCatching { sessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener) }
-        watched.values.forEach { it.detach() }
+        if (started) {
+            started = false
+            runCatching { sessionManager?.removeOnActiveSessionsChangedListener(activeSessionsListener) }
+            watched.values.forEach { it.detach() }
+        }
         watched.clear()
         selected = null
+        bindAttempts = 0
+        _snapshot.value = PlayerSnapshot()
     }
 
     /** Call from `onResume`: picks up a permission that was granted while we were away. */
     fun refresh() = onMain {
+        if (!listeningAllowed()) {
+            stop()
+            return@onMain
+        }
         val granted = isPermissionGranted()
         _permissionGranted.value = granted
         if (!granted) {
