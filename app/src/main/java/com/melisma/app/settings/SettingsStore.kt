@@ -299,9 +299,9 @@ data class Settings(
 
     // ---- popup lyrics ----------------------------------------------------
     /** Allow the floating window at all. */
-    val popupLyricsEnabled: Boolean = true,
+    val popupLyricsEnabled: Boolean = false,
     /** Shrink into it automatically when you leave the app, the way YouTube does. */
-    val popupAutoEnter: Boolean = true,
+    val popupAutoEnter: Boolean = false,
     val popupShape: PopupShape = PopupShape.LANDSCAPE,
     /** Show the cover and title in the floating window as well as the lyrics. */
     val popupShowArtwork: Boolean = true,
@@ -757,8 +757,8 @@ class SettingsStore(context: Context) : ProviderCredentials {
         translationTarget = prefs.getString(KEY_TRANSLATE_TARGET, "en") ?: "en",
         translationWifiOnly = prefs.getBoolean(KEY_TRANSLATE_WIFI, true),
 
-        popupLyricsEnabled = prefs.getBoolean(KEY_POPUP_ENABLED, true),
-        popupAutoEnter = prefs.getBoolean(KEY_POPUP_AUTO, true),
+        popupLyricsEnabled = false, // Spotify-only phone mode: no floating window
+        popupAutoEnter = false, // Never auto-enter PiP, even from old preferences
         popupShape = prefs.enum(KEY_POPUP_SHAPE, PopupShape.LANDSCAPE),
         popupShowArtwork = prefs.getBoolean(KEY_POPUP_ARTWORK, true),
         popupStillBackground = prefs.getBoolean(KEY_POPUP_STILL_BACKGROUND, true),
