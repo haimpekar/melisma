@@ -383,6 +383,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { container.lyrics.importLocal(uri) }
     }
 
+    /** This experiment needs Spotify's opt-in broadcasts, not notification access. */
     private fun openNotificationAccess() {
         runCatching { startActivity(container.media.notificationAccessIntent()) }
     }
