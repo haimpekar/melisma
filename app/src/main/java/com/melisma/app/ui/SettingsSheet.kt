@@ -1210,22 +1210,21 @@ fun SettingsSheet(
                 Spacer(Modifier.height(10.dp))
 
                 Text(
-                    "Privacy: visible-only monitoring",
+                    "Spotify-only: no notification permission",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Hint(
-                    "This fork listens to active media sessions only while Melisma itself is " +
-                        "visible on your phone, in picture-in-picture, or in Android Auto. " +
-                        "Hiding the last Melisma screen disconnects its notification listener " +
-                        "immediately, even while Spotify continues playing.",
+                    "Experimental playback source: Spotify Device Broadcast Status. " +
+                        "Turn it ON in Spotify → Settings and privacy → Playback. " +
+                        "Then play a new song while Melisma is visible.",
                 )
                 Help(
-                    "Android's notification access permission is still broadly granted; " +
-                        "while Melisma is visible and connected, Android may deliver notifications " +
-                        "from unrelated apps. The listener ignores their content. When hidden, " +
-                        "the app releases the binding, rather than waiting for a background timer. " +
-                        "For stronger protection, revoke notification access in Android Settings.",
+                    "This version never requests Android notification access. " +
+                        "Spotify may disable or change its broadcasts. If no song appears, " +
+                        "open Developer → What players publish to see whether events arrived. " +
+                        "Unlike the original Melisma, it cannot monitor other music apps or " +
+                        "control Spotify playback.",
                 )
 
                 Spacer(Modifier.height(6.dp))
