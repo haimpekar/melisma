@@ -202,7 +202,7 @@ fun MediaPanel(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     if (transport.skipPrevious) {
-                        IconButton(onClick = onPrevious, enabled = transport.skipPrevious) {
+                        IconButton(onClick = onPrevious) {
                             Icon(
                                 AppIcons.SkipPrevious,
                                 contentDescription = "Previous track",
@@ -211,7 +211,7 @@ fun MediaPanel(
                             )
                         }
                         Spacer(Modifier.width(6.dp))
-                        }
+                    }
                     IconButton(
                         onClick = onTogglePlay,
                         enabled = transport.playPause,
