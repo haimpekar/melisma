@@ -15,6 +15,12 @@ Melisma lyrics interface is visible**.
 - The listener rejects unexpected system-initiated binds while hidden.
   Android 14+ additionally has default automatic binding disabled.
 - A delayed media retry cannot reconnect while the app is hidden.
+- Android 12+ notification category filtering disables all four delivery categories
+  because Melisma only needs media-session privileges, not notification payloads.
+  Verify on-device that active media sessions still work with this restriction.
+- The GitHub CI workflow uploads a debug-signed APK and its SHA-256 checksum for
+  short-lived **test use only**. Debug signing is not suitable for a permanent
+  production release or consistent future upgrades.
 - A rapid close/reopen while an unbind is pending reconnects once the
   service reports disconnection.
 
