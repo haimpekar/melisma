@@ -81,7 +81,7 @@ class SpotifyBroadcastMediaTest {
         assertTrue(subject.snapshot.value.canControl)
         assertTrue(subject.snapshot.value.transport.playPause)
         assertTrue(subject.snapshot.value.transport.skipNext)
-        assertTrue(subject.snapshot.value.transport.skipPrevious)
+        assertFalse(subject.snapshot.value.transport.skipPrevious)
         assertFalse(subject.snapshot.value.transport.seek)
     }
 
