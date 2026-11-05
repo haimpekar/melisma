@@ -1223,8 +1223,10 @@ fun SettingsSheet(
                     "This version never requests Android notification access. " +
                         "Spotify may disable or change its broadcasts. If no song appears, " +
                         "open Developer → What players publish to see whether events arrived. " +
-                        "Unlike the original Melisma, it cannot monitor other music apps or " +
-                        "control Spotify playback.",
+                        "Unlike the original Melisma, it cannot monitor other music apps. " +
+                        "Play/Pause, Next and Previous send Android media-button events to " +
+                        "the active player (usually Spotify); seeking remains unavailable. " +
+                        "If another player becomes active, it may receive those controls.",
                 )
 
                 Spacer(Modifier.height(6.dp))
