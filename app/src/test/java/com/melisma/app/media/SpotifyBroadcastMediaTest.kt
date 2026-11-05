@@ -3,6 +3,7 @@ package com.melisma.app.media
 import android.content.Context
 import android.content.Intent
 import android.os.Looper
+import android.view.KeyEvent
 import androidx.test.core.app.ApplicationProvider
 import com.melisma.app.settings.SettingsStore
 import org.junit.After
@@ -23,11 +24,18 @@ class SpotifyBroadcastMediaTest {
     private lateinit var context: Context
     private lateinit var subject: SpotifyBroadcastMedia
     private var visible = true
+    private val dispatchedKeys = mutableListOf<Int>()
 
     @Before fun setup() {
         context = ApplicationProvider.getApplicationContext()
         visible = true
-        subject = SpotifyBroadcastMedia(context, SettingsStore(context), listeningAllowed = { visible })
+        dispatchedKeys.clear()
+        subject = SpotifyBroadcastMedia(
+            context,
+            SettingsStore(context),
+            listeningAllowed = { visible },
+            sendMediaKey = { dispatchedKeys += it },
+        )
         subject.start()
         idle()
     }
@@ -66,7 +74,11 @@ class SpotifyBroadcastMediaTest {
         assertEquals(215_000L, subject.snapshot.value.track?.durationMs)
         assertTrue(subject.snapshot.value.playback.isPlaying)
         assertTrue(subject.snapshot.value.playback.currentMs() >= 12_500L)
-        assertFalse(subject.snapshot.value.canControl)
+        assertTrue(subject.snapshot.value.canControl)
+        assertTrue(subject.snapshot.value.transport.playPause)
+        assertTrue(subject.snapshot.value.transport.skipNext)
+        assertTrue(subject.snapshot.value.transport.skipPrevious)
+        assertFalse(subject.snapshot.value.transport.seek)
     }
 
     @Test fun pausingStopsPlayheadAdvancement() {
@@ -108,4 +120,67 @@ class SpotifyBroadcastMediaTest {
         idle()
         assertFalse(subject.snapshot.value.hasTrack)
     }
+    @Test fun visibleSpotifyTrackAcceptsPlayPauseNextAndPreviousButtons() {
+        broadcast("com.spotify.music.metadatachanged") {
+            it.putExtra("track", "Playing")
+            it.putExtra("artist", "Singer")
+        }
+        subject.togglePlayPause()
+        subject.skipNext()
+        subject.skipPrevious()
+        idle()
+        assertEquals(
+            listOf(
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                KeyEvent.KEYCODE_MEDIA_NEXT,
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+            ),
+            dispatchedKeys,
+        )
+    }
+
+    @Test fun mediaKeysNeverDispatchWithoutSpotifyMetadataOrWhileHidden() {
+        subject.skipNext()
+        idle()
+        assertTrue("Cannot control an unknown media player", dispatchedKeys.isEmpty())
+
+        broadcast("com.spotify.music.metadatachanged") {
+            it.putExtra("track", "Playing")
+            it.putExtra("artist", "Singer")
+        }
+        visible = false
+        subject.togglePlayPause()
+        subject.skipNext()
+        idle()
+        assertTrue("Hidden Melisma must not send media keys", dispatchedKeys.isEmpty())
+        subject.stop()
+        idle()
+        visible = true
+        subject.skipPrevious()
+        idle()
+        assertTrue("Stopped receiver must not send media keys", dispatchedKeys.isEmpty())
+    }
+
+    @Test fun disabledSpotifyPlayerDoesNotOfferOrDispatchControls() {
+        val store = SettingsStore(context)
+        store.setPlayerIgnored("com.spotify.music", true)
+        // New repository is deliberately kept outside the app UI in the test.
+        val second = SpotifyBroadcastMedia(
+            context, store, listeningAllowed = { visible },
+            sendMediaKey = { dispatchedKeys += it },
+        )
+        second.start()
+        idle()
+        broadcast("com.spotify.music.metadatachanged") {
+            it.putExtra("track", "Ignored song")
+            it.putExtra("artist", "Artist")
+        }
+        assertFalse(second.snapshot.value.canControl)
+        second.skipNext()
+        idle()
+        assertTrue(dispatchedKeys.isEmpty())
+        second.stop()
+        idle()
+    }
+
 }
