@@ -570,7 +570,9 @@ private fun MainContent(
 
         !snapshot.hasTrack && !demoMode -> StatusMessage(
             title = "Nothing playing",
-            body = "Start a song in Spotify — or any player — and the lyrics will show up here.",
+            body = "Spotify-only experiment: enable Device Broadcast Status in Spotify " +
+                "Settings and privacy → Playback, then change tracks or play/pause while " +
+                "Melisma is visible. No notification permission or Spotify login needed.",
             action = if (BuildConfig.DEBUG) "Preview the renderer" else null,
             accent = colors.accent,
             onAction = onStartDemo,

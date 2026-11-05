@@ -385,64 +385,8 @@ fun SettingsSheet(
                     onCheckedChange = { store.setCompactMode(it) },
                 )
                 Help(
-                    "Meant for split screen or a small window. The floating window switches to it on its own, so you do not need this for that.",
+                    "Meant for small screens or Android split-screen viewing. It is optional in the regular full-screen app.",
                 )
-            }
-
-            Section(
-                title = "Popup lyrics",
-                subtitle = "The floating window",
-                open = openSection == "popup",
-                accent = accent,
-                onToggle = { openSection = if (openSection == "popup") null else "popup" },
-            ) {
-
-                ToggleRow(
-                    title = "Popup lyrics",
-                    subtitle = "Carry on in a floating window over other apps",
-                    checked = settings.popupLyricsEnabled,
-                    accent = accent,
-                    onCheckedChange = { store.setPopupLyricsEnabled(it) },
-                )
-
-                if (settings.popupLyricsEnabled) {
-                    ToggleRow(
-                        title = "Shrink automatically",
-                        subtitle = "Enter the window when you leave the app, the way YouTube does",
-                        checked = settings.popupAutoEnter,
-                        accent = accent,
-                        onCheckedChange = { store.setPopupAutoEnter(it) },
-                    )
-                Help(
-                    "On Android 12 and up the system does the shrinking itself, which is why it animates smoothly. Below that the app asks as you leave, which is a little more abrupt.",
-                )
-                    ChipGroup(
-                        label = "Shape",
-                        options = PopupShape.entries.map { it to it.label },
-                        selected = settings.popupShape,
-                        accent = accent,
-                        onSelect = { store.setPopupShape(it) },
-                    )
-                    ToggleRow(
-                        title = "Show the cover in the window",
-                        subtitle = "Only in Cinema view · off leaves the whole window to the words",
-                        checked = settings.popupShowArtwork,
-                        accent = accent,
-                        onCheckedChange = { store.setPopupShowArtwork(it) },
-                    )
-                    Help(
-                        "The floating window follows the main one: it is the same screen made " +
-                            "small, so it shows the cover when Cinema view does and only then. " +
-                            "Shrinking the app should not add a panel that was not on screen a " +
-                            "moment ago.",
-                    )
-                    Help(
-                        "The window's background is held still rather than drifting, because it is " +
-                            "on screen over whatever else you are doing for far longer than the " +
-                            "app itself is. The switch for that is under Battery, with everything " +
-                            "else that trades a little of the look for charge.",
-                    )
-                }
             }
 
             Section(
@@ -1210,22 +1154,23 @@ fun SettingsSheet(
                 Spacer(Modifier.height(10.dp))
 
                 Text(
-                    "Privacy: visible-only monitoring",
+                    "Spotify-only: no notification permission",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Hint(
-                    "This fork listens to active media sessions only while Melisma itself is " +
-                        "visible on your phone, in picture-in-picture, or in Android Auto. " +
-                        "Hiding the last Melisma screen disconnects its notification listener " +
-                        "immediately, even while Spotify continues playing.",
+                    "Experimental playback source: Spotify Device Broadcast Status. " +
+                        "Turn it ON in Spotify → Settings and privacy → Playback. " +
+                        "Then play a new song while Melisma is visible.",
                 )
                 Help(
-                    "Android's notification access permission is still broadly granted; " +
-                        "while Melisma is visible and connected, Android may deliver notifications " +
-                        "from unrelated apps. The listener ignores their content. When hidden, " +
-                        "the app releases the binding, rather than waiting for a background timer. " +
-                        "For stronger protection, revoke notification access in Android Settings.",
+                    "This version never requests Android notification access. " +
+                        "Spotify may disable or change its broadcasts. If no song appears, " +
+                        "open Developer → What players publish to see whether events arrived. " +
+                        "Unlike the original Melisma, it cannot monitor other music apps. " +
+                        "Play/Pause and Next send Android media-button events to " +
+                        "the active player (usually Spotify); seeking remains unavailable. " +
+                        "If another player becomes active, it may receive those controls.",
                 )
 
                 Spacer(Modifier.height(6.dp))

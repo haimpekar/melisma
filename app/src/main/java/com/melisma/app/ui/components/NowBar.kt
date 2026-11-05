@@ -129,12 +129,14 @@ fun NowBar(
             // but not skip, and a control that is shown and ignored is worse than one that
             // is visibly unavailable.
             if (transport.any) {
-                IconButton(onClick = onPrevious, enabled = transport.skipPrevious) {
-                    Icon(
-                        AppIcons.SkipPrevious,
-                        contentDescription = "Previous track",
-                        tint = Color.White.copy(alpha = 0.85f),
-                    )
+                if (transport.skipPrevious) {
+                    IconButton(onClick = onPrevious) {
+                        Icon(
+                            AppIcons.SkipPrevious,
+                            contentDescription = "Previous track",
+                            tint = Color.White.copy(alpha = 0.85f),
+                        )
+                    }
                 }
                 IconButton(onClick = onTogglePlay, enabled = transport.playPause) {
                     Icon(

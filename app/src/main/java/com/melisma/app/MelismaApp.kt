@@ -20,7 +20,7 @@ import com.melisma.app.lyrics.provider.SpotifyWebToken
 import com.melisma.app.lyrics.provider.SpotifyLyricsProvider
 import com.melisma.app.lyrics.romanize.Romanizer
 import com.melisma.app.lyrics.translate.LyricsTranslator
-import com.melisma.app.media.MediaSessionRepository
+import com.melisma.app.media.SpotifyBroadcastMedia
 import com.melisma.app.media.NowPlayingExtras
 import com.melisma.app.media.SpotifyExtras
 import com.melisma.app.settings.PowerSaveWatcher
@@ -58,7 +58,6 @@ import com.melisma.app.media.CacheServerExtras
 import com.melisma.app.media.ExtrasStore
 import com.melisma.app.media.IsrcStore
 import com.melisma.app.media.ServerSource
-import com.melisma.app.media.MediaNotificationListener
 
 /**
  * Hand-rolled container instead of a DI framework: there are eight objects, they are
@@ -67,10 +66,9 @@ import com.melisma.app.media.MediaNotificationListener
 class AppContainer(context: Context) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val appContext = context.applicationContext
 
     val settings = SettingsStore(context)
-    val media = MediaSessionRepository(context, settings, listeningAllowed = { isLyricsVisible })
+    val media = SpotifyBroadcastMedia(context, settings, listeningAllowed = { isLyricsVisible })
 
     private val powerSave = PowerSaveWatcher(context)
 
@@ -215,13 +213,10 @@ class AppContainer(context: Context) {
     /** Called on the main thread from phone/car visibility lifecycle changes. */
     private fun reconcileListening() {
         if (isLyricsVisible) {
-            MediaNotificationListener.rebind(appContext)
-            media.refresh()
             media.start()
         } else {
             media.stop()
             lyrics.clearForPrivacy()
-            MediaNotificationListener.standDown()
         }
     }
 

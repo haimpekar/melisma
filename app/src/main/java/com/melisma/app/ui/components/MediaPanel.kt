@@ -201,15 +201,17 @@ fun MediaPanel(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    IconButton(onClick = onPrevious, enabled = transport.skipPrevious) {
-                        Icon(
-                            AppIcons.SkipPrevious,
-                            contentDescription = "Previous track",
-                            tint = Color.White.copy(alpha = 0.85f),
-                            modifier = Modifier.size(26.dp),
-                        )
+                    if (transport.skipPrevious) {
+                        IconButton(onClick = onPrevious) {
+                            Icon(
+                                AppIcons.SkipPrevious,
+                                contentDescription = "Previous track",
+                                tint = Color.White.copy(alpha = 0.85f),
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
                     }
-                    Spacer(Modifier.width(6.dp))
                     IconButton(
                         onClick = onTogglePlay,
                         enabled = transport.playPause,

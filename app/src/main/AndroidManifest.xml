@@ -27,6 +27,7 @@
       a player warrants, and the fallback reads fine without it.
     -->
     <queries>
+        <package android:name="com.spotify.music" />
         <intent>
             <action android:name="android.media.browse.MediaBrowserService" />
         </intent>
@@ -94,31 +95,8 @@
             </intent-filter>
         </activity>
 
-        <!--
-          The whole point of this service is the permission it declares: once the
-          user grants "notification access", the system lets us call
-          MediaSessionManager.getActiveSessions(), which is how we see what is
-          playing in Spotify (or any other player) and where its playhead is.
-        -->
-        <service
-            android:name=".media.MediaNotificationListener"
-            android:exported="true"
-            android:label="@string/notification_listener_label"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-            <!-- Android 14+: only bind on demand while showing lyrics. -->
-            <meta-data
-                android:name="android.service.notification.default_autobind_listenerservice"
-                android:value="false" />
-            <!-- No notification payloads are needed; media-session access is separate.
-                 Android 12+ category filtering protects while the listener is bound.
-                 Test compatibility with Android Auto on target devices. -->
-            <meta-data
-                android:name="android.service.notification.disabled_filter_types"
-                android:value="ongoing|conversations|alerting|silent" />
-        </service>
+        <!-- No NotificationListenerService is declared in this Spotify-only experiment.
+             Spotify metadata arrives via optional broadcasts only while visible. -->
         <!--
           The car screen.
           Exported because the Android Auto host is a different process and has to be able to bind
