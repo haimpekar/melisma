@@ -385,7 +385,7 @@ fun SettingsSheet(
                     onCheckedChange = { store.setCompactMode(it) },
                 )
                 Help(
-                    "Meant for split screen or a small window. The floating window switches to it on its own, so you do not need this for that.",
+                    "Meant for small screens or Android split-screen viewing. It is optional in the regular full-screen app.",
                 )
             }
 
@@ -1168,7 +1168,7 @@ fun SettingsSheet(
                         "Spotify may disable or change its broadcasts. If no song appears, " +
                         "open Developer → What players publish to see whether events arrived. " +
                         "Unlike the original Melisma, it cannot monitor other music apps. " +
-                        "Play/Pause, Next and Previous send Android media-button events to " +
+                        "Play/Pause and Next send Android media-button events to " +
                         "the active player (usually Spotify); seeking remains unavailable. " +
                         "If another player becomes active, it may receive those controls.",
                 )
