@@ -65,7 +65,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.melisma.app.AppContainer
 import com.melisma.app.BuildConfig
 import com.melisma.app.lyrics.LyricsState
@@ -107,6 +110,7 @@ fun PlayerScreen(
     val canvas by container.canvasVideo.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val clipboard = LocalClipboard.current
     val haptics = LocalHapticFeedback.current
     val saving by container.saving.collectAsStateWithLifecycle()
