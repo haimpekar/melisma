@@ -123,6 +123,12 @@
             <meta-data
                 android:name="android.service.notification.default_autobind_listenerservice"
                 android:value="false" />
+            <!-- No notification payloads are needed; media-session access is separate.
+                 Android 12+ category filtering protects while the listener is bound.
+                 Test compatibility with Android Auto on target devices. -->
+            <meta-data
+                android:name="android.service.notification.disabled_filter_types"
+                android:value="ongoing|conversations|alerting|silent" />
         </service>
         <!--
           The car screen.
