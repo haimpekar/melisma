@@ -390,62 +390,6 @@ fun SettingsSheet(
             }
 
             Section(
-                title = "Popup lyrics",
-                subtitle = "The floating window",
-                open = openSection == "popup",
-                accent = accent,
-                onToggle = { openSection = if (openSection == "popup") null else "popup" },
-            ) {
-
-                ToggleRow(
-                    title = "Popup lyrics",
-                    subtitle = "Carry on in a floating window over other apps",
-                    checked = settings.popupLyricsEnabled,
-                    accent = accent,
-                    onCheckedChange = { store.setPopupLyricsEnabled(it) },
-                )
-
-                if (settings.popupLyricsEnabled) {
-                    ToggleRow(
-                        title = "Shrink automatically",
-                        subtitle = "Enter the window when you leave the app, the way YouTube does",
-                        checked = settings.popupAutoEnter,
-                        accent = accent,
-                        onCheckedChange = { store.setPopupAutoEnter(it) },
-                    )
-                Help(
-                    "On Android 12 and up the system does the shrinking itself, which is why it animates smoothly. Below that the app asks as you leave, which is a little more abrupt.",
-                )
-                    ChipGroup(
-                        label = "Shape",
-                        options = PopupShape.entries.map { it to it.label },
-                        selected = settings.popupShape,
-                        accent = accent,
-                        onSelect = { store.setPopupShape(it) },
-                    )
-                    ToggleRow(
-                        title = "Show the cover in the window",
-                        subtitle = "Only in Cinema view · off leaves the whole window to the words",
-                        checked = settings.popupShowArtwork,
-                        accent = accent,
-                        onCheckedChange = { store.setPopupShowArtwork(it) },
-                    )
-                    Help(
-                        "The floating window follows the main one: it is the same screen made " +
-                            "small, so it shows the cover when Cinema view does and only then. " +
-                            "Shrinking the app should not add a panel that was not on screen a " +
-                            "moment ago.",
-                    )
-                    Help(
-                        "The window's background is held still rather than drifting, because it is " +
-                            "on screen over whatever else you are doing for far longer than the " +
-                            "app itself is. The switch for that is under Battery, with everything " +
-                            "else that trades a little of the look for charge.",
-                    )
-                }
-            }
-
-            Section(
                 title = "Android Auto",
                 subtitle = "The lyrics on a car screen",
                 open = openSection == "car",
