@@ -5,15 +5,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!--
-      Installed from an APK rather than a store, so the app has to be able to offer its own
-      updates: this is what lets it install a downloaded release. It grants nothing beyond
-      that — Android still refuses an APK signed with a different key, which is what makes
-      it safe.
-    -->
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- Lets an update install without Android's confirmation screen; see Updater.installSession. -->
-    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
 
     <!--
       Android Auto. MAP_TEMPLATES buys MapWithContentTemplate, which is the one template outside the
@@ -46,8 +37,6 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.APP_MUSIC" />
         </intent>
-        <!-- Named so the Shizuku setting can say "Shizuku is not installed" rather than nothing. -->
-        <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
     <application
@@ -153,41 +142,10 @@
             </intent-filter>
         </service>
 
-        <!-- An update's install status, from Android; see InstallStatusReceiver. -->
-        <receiver
-            android:name=".update.InstallStatusReceiver"
-            android:exported="false" />
-
-        <!--
-          Hands the downloaded APK to the system installer's screen, when an install session
-          cannot be started. A content URI rather than a
-          file path, because passing a file:// URI across processes has been forbidden
-          since Android 7 — and this way the read permission is granted for that one file
-          and revoked when the installer is done with it.
-        -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.updates"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/update_paths" />
-        </provider>
-
-        <!--
-          How Shizuku hands the app its binder, when the user has Shizuku and has switched the
-          setting on. Exported because Shizuku is a different app and has to reach it;
-          INTERACT_ACROSS_USERS_FULL is the permission Shizuku's own documentation specifies for
-          it, which no ordinary app holds, so nothing else can.
-        -->
+        <!-- Remove the Shizuku provider from any transitive dependency manifest. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku"
-            android:multiprocess="false"
-            android:enabled="true"
-            android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+            tools:node="remove" />
 
     </application>
 </manifest>
