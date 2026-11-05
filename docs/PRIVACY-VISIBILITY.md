@@ -47,5 +47,9 @@ still capable of receiving unrelated notifications.
 CI includes pure eligibility tests, but physical Android/Android Auto lifecycle
 tests still need to be run on the target device before any security guarantee.
 
-This change does **not** remove self-updating. Disable automatic update checks and
-Shizuku updates in the app settings when using a pinned release.
+This privacy fork disables automatic update checks and removes self-update controls.
+It also removes the app's installation permissions and Shizuku provider declaration.
+The original updater source remains present for upstream compatibility but is no longer
+instantiated or accessible from the UI. The notification listener remains essential
+to read active media sessions. Google Play Protect can block internet-sideloaded APKs
+that request this sensitive capability; never bypass such a warning just to test.
